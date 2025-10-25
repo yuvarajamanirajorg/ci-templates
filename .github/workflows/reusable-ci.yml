@@ -1,0 +1,66 @@
+name: Reusable CI/CD Template
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+      deploy_hook:
+        required: false
+        type: string
+
+jobs:
+  ci-cd:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        if: ${{ inputs.environment != 'none' }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      # ---------- DEV (feature) ----------
+      - name: Code quality checks
+        if: ${{ inputs.environment == 'dev' }}
+        run: |
+          pip install black flake8
+          black --check .
+          flake8 .
+
+      # ---------- TEST ----------
+      - name: Build Docker image
+        if: ${{ inputs.environment == 'test' }}
+        run: docker build -t app-test .
+
+      - name: Run app container
+        if: ${{ inputs.environment == 'test' }}
+        run: |
+          docker run -d -p 8000:8000 app-test
+          sleep 5
+          curl -f http://localhost:8000/health || exit 1
+
+      # ---------- PROD ----------
+      - name: Manual approval before production deploy
+        if: ${{ inputs.environment == 'prod' }}
+        uses: trstringer/manual-approval@v1
+        with:
+          approvers: "your-github-username"
+          minimum-approvals: 1
+
+      - name: Deploy to Render
+        if: ${{ inputs.environment == 'prod' }}
+        run: |
+          curl -X POST "${{ inputs.deploy_hook }}"
+
+      - name: Notify Discord
+        if: always()
+        run: |
+          curl -H "Content-Type: application/json" \
+          -X POST \
+          -d "{\"content\": \"✅ **${{ inputs.environment }}** pipeline completed for ${{ github.repository }}\"}" \
+          ${{ secrets.DISCORD_WEBHOOK }}
