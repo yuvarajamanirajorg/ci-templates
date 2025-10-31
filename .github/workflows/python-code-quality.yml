@@ -49,8 +49,8 @@ jobs:
       - name: Compile Python scripts
         run: python -m compileall -q .
 
-      - name: Run app/script.py
-        run: python app/script.py   
+      - name: Run app
+        run: python app/main.py   
 
       - name: Notify Discord Success
         if: success()
