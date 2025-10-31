@@ -18,7 +18,7 @@ jobs:
       - name: Validate Python syntax
         id: syntax_check
         run: python -m compileall -q .
-      
+
       - name: Notify Discord Success
         if: success()
         uses: Ilshidur/action-discord@0.4.0
@@ -34,8 +34,9 @@ jobs:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         with:
           args: '❌ Python syntax check failed!'
-          
+
   python-run:
+    needs: syntax-check   
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
