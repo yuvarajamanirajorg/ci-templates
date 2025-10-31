@@ -1,0 +1,69 @@
+name: Python CI Template
+
+on:
+  workflow_call:
+    secrets:
+      DISCORD_WEBHOOK:
+        required: true
+
+jobs:
+  syntax-check:
+    runs-on: ubuntu-latest
+    outputs:
+      syntax_status: ${{ steps.syntax_check.outcome }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate Python syntax
+        id: syntax_check
+        run: python -m compileall -q .
+      
+      - name: Notify Discord Success
+        if: success()
+        uses: Ilshidur/action-discord@0.4.0
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        with:
+          args: '✅ Python syntax validation passed.'
+
+      - name: Notify Discord Failure
+        if: failure()
+        uses: Ilshidur/action-discord@0.4.0
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        with:
+          args: '❌ Python syntax check failed!'
+          
+  python-run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'  
+
+      - name: Compile Python scripts
+        run: python -m compileall -q .
+
+      - name: Run app/script.py
+        run: python app/script.py   
+
+      - name: Notify Discord Success
+        if: success()
+        uses: Ilshidur/action-discord@0.4.0
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        with:
+          args: '✅ Python code passed.'
+
+      - name: Notify Discord Failure
+        if: failure()
+        uses: Ilshidur/action-discord@0.4.0
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        with:
+          args: '❌ Python code failed!'
